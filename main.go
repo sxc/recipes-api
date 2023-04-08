@@ -19,6 +19,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"recepes-api/docs"
@@ -27,9 +28,9 @@ import (
 	// gin-swagger middleware
 
 	"github.com/gin-gonic/gin"
-	"github.com/rs/xid"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -42,9 +43,15 @@ func NewRecipeHanler(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
-	recipe.ID = xid.New().String()
+	recipe.ID = primitive.NewObjectID()
 	recipe.PublishedAt = time.Now()
-	recipes = append(recipes, recipe)
+	// recipes = append(recipes, recipe)
+	_, err = client.Database("recipes").Collection("recipes").InsertOne(ctx, recipe)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(http.StatusOK, recipe)
 }
 
@@ -70,34 +77,34 @@ func ListRecipesHanler(c *gin.Context) {
 }
 
 func UpdateRecipeHanler(c *gin.Context) {
-	id := c.Param("id")
+	// id := c.Param("id")
 	var recipe Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error()})
 		return
 	}
-	for i, r := range recipes {
-		if r.ID == id {
-			recipes[i] = recipe
-			c.JSON(http.StatusOK, recipe)
-			return
-		}
-	}
+	// for i, r := range recipes {
+	// 	if r.ID == id {
+	// 		recipes[i] = recipe
+	// 		c.JSON(http.StatusOK, recipe)
+	// 		return
+	// 	}
+	// }
 	c.JSON(http.StatusNotFound, gin.H{
 		"error": "recipe not found"})
 }
 
 func DeleteREcipeHanler(c *gin.Context) {
-	id := c.Param("id")
-	for i, r := range recipes {
-		if r.ID == id {
-			recipes = append(recipes[:i], recipes[i+1:]...)
-			c.JSON(http.StatusOK, gin.H{
-				"message": "recipe deleted"})
-			return
-		}
-	}
+	// id := c.Param("id")
+	// for i, r := range recipes {
+	// 	if r.ID == id {
+	// 		recipes = append(recipes[:i], recipes[i+1:]...)
+	// 		c.JSON(http.StatusOK, gin.H{
+	// 			"message": "recipe deleted"})
+	// 		return
+	// 	}
+	// }
 	c.JSON(http.StatusNotFound, gin.H{
 		"error": "recipe not found"})
 }
@@ -164,10 +171,10 @@ func main() {
 }
 
 type Recipe struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	Tags         []string  `json:"tags"`
-	Ingredients  []string  `json:"ingredients"`
-	Instructions []string  `josn:"instructions"`
-	PublishedAt  time.Time `josn:"publishedAt"`
+	ID           primitive.ObjectID `json:"id" bson: "_id"`
+	Name         string             `json:"name" bson: "name"`
+	Tags         []string           `json:"tags" bson: "tags"`
+	Ingredients  []string           `json:"ingredients" bson: "ingredients"`
+	Instructions []string           `josn:"instructions" bson: "instructions"`
+	PublishedAt  time.Time          `josn:"publishedAt" bson: "publishedAt"`
 }
