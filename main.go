@@ -19,8 +19,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"recepes-api/docs"
@@ -31,6 +29,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/xid"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -50,7 +49,24 @@ func NewRecipeHanler(c *gin.Context) {
 }
 
 func ListRecipesHanler(c *gin.Context) {
+	// c.JSON(http.StatusOK, recipes)
+	cur, err := client.Database("recipes").Collection("recipes").Find(ctx, bson.D{})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	defer cur.Close(ctx)
+	recipes := make([]Recipe, 0)
+	for cur.Next(ctx) {
+		var recipe Recipe
+		err := cur.Decode(&recipe)
+		if err != nil {
+			log.Fatal(err)
+		}
+		recipes = append(recipes, recipe)
+	}
 	c.JSON(http.StatusOK, recipes)
+
 }
 
 func UpdateRecipeHanler(c *gin.Context) {
@@ -106,9 +122,9 @@ var err error
 var client *mongo.Client
 
 func init() {
-	recipes = make([]Recipe, 0)
-	file, _ := ioutil.ReadFile("recipes.json")
-	json.Unmarshal([]byte(file), &recipes)
+	// recipes = make([]Recipe, 0)
+	// file, _ := ioutil.ReadFile("recipes.json")
+	// json.Unmarshal([]byte(file), &recipes)
 
 	ctx = context.Background()
 	client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
@@ -117,16 +133,16 @@ func init() {
 	}
 	log.Println("Cnnected to MongoDB")
 
-	var listOfRecipes []interface{}
-	for _, r := range recipes {
-		listOfRecipes = append(listOfRecipes, r)
-	}
-	collection := client.Database("recipes").Collection("recipes")
-	collection.InsertMany(ctx, listOfRecipes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Inserted recipes: ", len(listOfRecipes), " recipes")
+	// var listOfRecipes []interface{}
+	// for _, r := range recipes {
+	// 	listOfRecipes = append(listOfRecipes, r)
+	// }
+	// collection := client.Database("recipes").Collection("recipes")
+	// collection.InsertMany(ctx, listOfRecipes)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// log.Println("Inserted recipes: ", len(listOfRecipes), " recipes")
 }
 
 func main() {
