@@ -1,10 +1,30 @@
+// Recipes API
+//
+// This is a sample recipes API. You can find out more about the API at https://github.com/sxc/recipes-api.
+//
+//  Schemes: http
+//  Host: localhost:8080
+//  BasePath: /
+//  Version: 1.0.0
+//  Contact: Jim S
+//
+//  Consumes:
+//  - application/json
+//
+//  Produces:
+//  - application/json
+// swagger:meta”
+
 package main
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"recepes-api/docs"
 	"time"
+
+	// gin-swagger middleware
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/xid"
@@ -82,6 +102,14 @@ func init() {
 }
 
 func main() {
+
+	docs.SwaggerInfo.Title = "Swagger Example API"
+	docs.SwaggerInfo.Description = "This is a sample server Petstore server."
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "petstore.swagger.io"
+	docs.SwaggerInfo.BasePath = "/v2"
+	docs.SwaggerInfo.Schemes = []string{"http", "https"}
+
 	router := gin.Default()
 	router.POST("/recipes", NewRecipeHanler)
 	router.GET("/recipes", ListRecipesHanler)
