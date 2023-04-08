@@ -18,8 +18,10 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"recepes-api/docs"
 	"time"
@@ -28,6 +30,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/xid"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 func NewRecipeHanler(c *gin.Context) {
@@ -95,10 +101,32 @@ func SearchRecipesHanler(c *gin.Context) {
 
 var recipes []Recipe
 
+var ctx context.Context
+var err error
+var client *mongo.Client
+
 func init() {
 	recipes = make([]Recipe, 0)
 	file, _ := ioutil.ReadFile("recipes.json")
 	json.Unmarshal([]byte(file), &recipes)
+
+	ctx = context.Background()
+	client, err = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	if err = client.Ping(ctx, readpref.Primary()); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Cnnected to MongoDB")
+
+	var listOfRecipes []interface{}
+	for _, r := range recipes {
+		listOfRecipes = append(listOfRecipes, r)
+	}
+	collection := client.Database("recipes").Collection("recipes")
+	collection.InsertMany(ctx, listOfRecipes)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Inserted recipes: ", len(listOfRecipes), " recipes")
 }
 
 func main() {
