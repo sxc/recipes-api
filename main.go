@@ -77,13 +77,22 @@ func ListRecipesHanler(c *gin.Context) {
 }
 
 func UpdateRecipeHanler(c *gin.Context) {
-	// id := c.Param("id")
+	id := c.Param("id")
 	var recipe Recipe
 	if err := c.ShouldBindJSON(&recipe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error()})
 		return
 	}
+	objectId, _ := primitive.ObjectIDFromHex(id)
+	_, err = client.Database("recipes").Collection("recipes").UpdateOne(ctx, bson.M{"_id": objectId}, bson.M{
+		"$set": recipe})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, recipe)
+
 	// for i, r := range recipes {
 	// 	if r.ID == id {
 	// 		recipes[i] = recipe
@@ -91,8 +100,8 @@ func UpdateRecipeHanler(c *gin.Context) {
 	// 		return
 	// 	}
 	// }
-	c.JSON(http.StatusNotFound, gin.H{
-		"error": "recipe not found"})
+	// c.JSON(http.StatusNotFound, gin.H{
+	// 	"error": "recipe not found"})
 }
 
 func DeleteREcipeHanler(c *gin.Context) {
